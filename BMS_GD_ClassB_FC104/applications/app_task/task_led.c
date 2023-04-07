@@ -61,7 +61,7 @@ void task_led_entry(void *para)
 						//module_balance_cal(1);
 					
 						//通信告警检测
-						Commu_fail_warning_detect();
+//						Commu_fail_warning_detect();
 								
 				}
 		

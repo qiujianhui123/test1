@@ -1,0 +1,118 @@
+/*
+ * Copyright (c) 2006-2022, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-10-29     RT-Thread    first version
+ */
+
+#include <rtthread.h>
+#include "task.h"
+#include "GlobalVarShared.h"
+#include "config_io.h"
+#include "uart_api.h"
+#include "bms_can.h"
+#include "bms_ad.h"
+<<<<<<< HEAD
+
+=======
+#include "GlobalVarShared.h"
+#include "drv_soft_i2c.h"
+>>>>>>> 158e60fbca6d1923e52433a123a2603b4916af59
+
+#include "bms_wakeup_sleep.h"
+#ifdef SELF_TEST
+#include "stm32fxx_STLmain.h"
+#endif
+
+static void application_init(void);
+static void task_init(void);
+static void ipc_init(void);
+
+int main(void)
+{
+    /*运行时自检初始化*/
+#ifdef SELF_TEST
+    STL_InitRunTimeChecks();
+#endif
+
+    /*应用初始化*/
+    application_init();
+
+    /*创建线程通信量*/
+    ipc_init();
+
+    /*创建任务*/
+    task_init();
+
+    return RT_EOK;
+}
+
+/*应用程序配置初始化*/
+static void application_init(void)
+{
+#ifdef WAKE_UP
+    // 待机模式
+    WAKEUP_Init();
+#endif
+
+    // GPIO配置
+    config_gpio();
+
+    // CAN1配置
+    can1_init();
+	
+	//I2C配置初始化
+	rt_hw_i2c_init();
+	
+	  //EEPROM-I2C配置
+	  I2C1_init();
+		
+		//Eeprom_Init
+		Eeprom_Init();
+	
+		//AFE-I2C配置
+		I2C2_init();
+//	  rt_thread_mdelay(100);
+//	
+		StartUp_UpdataAfeConfig();
+		//ADC1+DMA配置
+		ADC1_Init();
+		
+		//告警计数时间初始化
+		Warning_time_init();
+
+}
+
+/*静态方式创建任务*/
+static void task_init(void)
+{
+    rt_int16_t i;
+
+    for (i = 0; i < MAX_APP_TASK_NUM; i++)
+    {
+        // 任务初始化
+        rt_thread_init(&app_task[i],
+                       app_task_table[i].name,
+                       app_task_table[i].entry,
+                       app_task_table[i].parameter,
+                       app_task_table[i].stack_start,
+                       app_task_table[i].stack_size,
+                       app_task_table[i].priority,
+                       app_task_table[i].tick);
+
+        // 启动任务
+        rt_thread_startup(&app_task[i]);
+    }
+}
+
+/*创建线程通信量*/
+static void ipc_init(void)
+{
+    /* 初始化信号量 */
+    rt_sem_init(&uart_rx_sem[0], "rx_sem0", 0, RT_IPC_FLAG_FIFO);
+    rt_sem_init(&uart_rx_sem[1], "rx_sem1", 0, RT_IPC_FLAG_FIFO);
+    rt_sem_init(&can1_rx_sem, "rx_sem3", 0, RT_IPC_FLAG_FIFO);
+}
